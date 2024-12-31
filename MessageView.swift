@@ -20,36 +20,76 @@ struct MessageView<T: View>: View {
     let side: Side
     let maxWidth: CGFloat
     let status: MessageViewStatus?
+    let showFeedback: Bool
+    let isLiked: Bool?
     let content: () -> T
     
     init(
         side: Side,
         maxWidth: CGFloat,
         status: MessageViewStatus? = nil,
+        showFeedback: Bool = false,
+        isLiked: Bool? = nil,
         @ViewBuilder content: @escaping () -> T
     ) {
         self.side = side
         self.maxWidth = maxWidth
         self.status = status
+        self.showFeedback = showFeedback
+        self.isLiked = isLiked
         self.content = content
     }
     
     var body: some View {
-        HStack {
-            if side == .mine {
-                Spacer()
+        VStack(spacing: 16) {
+            HStack {
+                if side == .mine {
+                    Spacer()
+                }
+                
+                content()
+                    .frame(maxWidth: maxWidth, alignment: side == .mine ? .trailing : .leading)
+                    .padding(.bottom, status == nil ? 0 : 10)
+                    .overlay(
+                        statusButton,
+                        alignment: .bottomTrailing
+                    )
+                
+                if side == .their {
+                    Spacer()
+                }
             }
             
-            content()
-                .frame(maxWidth: maxWidth, alignment: side == .mine ? .trailing : .leading)
-                .padding(.bottom, status == nil ? 0 : 10)
-                .overlay(
-                    statusButton,
-                    alignment: .bottomTrailing
-                )
-            
-            if side == .their {
-                Spacer()
+            if showFeedback {
+                HStack(spacing: 8) {
+                    Text("Like it?")
+                        .italic()
+                    
+                    HStack(spacing: 0) {
+                        Button(action: {
+                            print("Thumbs up button tapped!")
+                        }) {
+                            Image(systemName: isLiked == true ? "hand.thumbsup.fill" : "hand.thumbsup")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 24, height: 24)
+                        }
+                        .padding(.horizontal, 12)
+                        
+                        Button(action: {
+                            print("Thumbs up button tapped!")
+                        }) {
+                            Image(systemName: isLiked == false ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 24, height: 24)
+                        }
+                        .padding(.horizontal, 12)
+                    }
+                    
+                    Spacer()
+                }
+                .foregroundStyle(Color.blue)
             }
         }
     }
@@ -89,12 +129,20 @@ struct MessageView<T: View>: View {
 }
 
 #Preview {
-    VStack {
+    VStack(spacing: 16) {
         MessageView(side: .mine, maxWidth: 300) {
             BubbleTextComponent(
                 text: "How many accounts do I have?",
                 background: Color.gray.opacity(0.15)
             )
+        }
+        
+        MessageView(side: .their, maxWidth: 300, showFeedback: true) {
+            PlainTextComponent(text: "Your total balance across all accounts is $18,142,459.05. The majority of your holdings are in the Brokerage Account ending in 239843")
+        }
+        
+        MessageView(side: .their, maxWidth: 300, showFeedback: true, isLiked: true) {
+            PlainTextComponent(text: "Your total balance across all accounts is $18,142,459.05. The majority of your holdings are in the Brokerage Account ending in 239843")
         }
         
         MessageView(side: .mine, maxWidth: 300, status: .delivered) {
@@ -110,6 +158,7 @@ struct MessageView<T: View>: View {
                 background: Color.gray.opacity(0.15)
             )
         }
+        
     }
     .padding()
 }
